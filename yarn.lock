@@ -71,6 +71,19 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
+"@deno/shim-deno-test@^0.4.0":
+  "integrity" "sha512-oYWcD7CpERZy/TXMTM9Tgh1HD/POHlbY9WpzmAk+5H8DohcxG415Qws8yLGlim3EaKBT2v3lJv01x4G0BosnaQ=="
+  "resolved" "https://registry.npmjs.org/@deno/shim-deno-test/-/shim-deno-test-0.4.0.tgz"
+  "version" "0.4.0"
+
+"@deno/shim-deno@~0.16.1":
+  "integrity" "sha512-s9v0kzF5bm/o9TgdwvsraHx6QNllYrXXmKzgOG2lh4LFXnVMr2gpjK/c/ve6EflQn1MqImcWmVD8HAv5ahuuZQ=="
+  "resolved" "https://registry.npmjs.org/@deno/shim-deno/-/shim-deno-0.16.1.tgz"
+  "version" "0.16.1"
+  dependencies:
+    "@deno/shim-deno-test" "^0.4.0"
+    "which" "^2.0.2"
+
 "@ethereumjs/rlp@^4.0.1":
   "integrity" "sha512-tqsQiBQDQdmPWE1xkkBq4rlSW5QZpLOUJ5RJh2/9fug+q9tnUhuZoVLk7s0scUIKTOzEtR72DFBXI4WiZcMpvw=="
   "resolved" "https://registry.npmjs.org/@ethereumjs/rlp/-/rlp-4.0.1.tgz"
@@ -427,6 +440,14 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
+"@grammyjs/conversations@^1.2.0":
+  "integrity" "sha512-d06nGFPlcea4UqjOcxCm5rwiV74bZQVUWQl3YVQp5TwC0oCHNK+PXgqaKkVgkfcYSMyx3dADRBuBkcGt+yiyDA=="
+  "resolved" "https://registry.npmjs.org/@grammyjs/conversations/-/conversations-1.2.0.tgz"
+  "version" "1.2.0"
+  dependencies:
+    "debug" "^4.3.4"
+    "o-son" "^1.0.1"
+
 "@grammyjs/runner@^2.0.3":
   "integrity" "sha512-nckmTs1dPWfVQteK9cxqxzE+0m1VRvluLWB8UgFzsjg62w3qthPJt0TYtJBEdG7OedvfQq4vnFAyE6iaMkR42A=="
   "resolved" "https://registry.npmjs.org/@grammyjs/runner/-/runner-2.0.3.tgz"
@@ -434,10 +455,10 @@
   dependencies:
     "abort-controller" "^3.0.0"
 
-"@grammyjs/types@3.2.2":
-  "integrity" "sha512-ycKdX7sfjtrKUzKmzQeDrHdsIetcuu8Wbz7WDZtOj2PmJrYGYbC40R7O2v7vhncmQNKUgu8YSvADPKCmnTb73Q=="
-  "resolved" "https://registry.npmjs.org/@grammyjs/types/-/types-3.2.2.tgz"
-  "version" "3.2.2"
+"@grammyjs/types@^3.4.6":
+  "integrity" "sha512-J7xb4JFmdTG2JXDirytp9KuUBKhzT8cAeB3tg2dyWy0VzF/Pdi1t8YaBmNsGeL6VvdvAXHtBTfzrc3jBTD2Kuw=="
+  "resolved" "https://registry.npmjs.org/@grammyjs/types/-/types-3.4.6.tgz"
+  "version" "3.4.6"
 
 "@jridgewell/resolve-uri@^3.0.3":
   "integrity" "sha512-dSYZh7HhCDtCKm4QakX0xFpsRDqjjtZf/kjI/v3T3Nwt5r8/qz/M19F9ySyOqU94SXBmeG9ttTul+YnR4LOxFA=="
@@ -1985,12 +2006,12 @@
   "resolved" "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz"
   "version" "4.2.11"
 
-"grammy@^1.11.2", "grammy@^1.13.1":
-  "integrity" "sha512-XnqFeADCXzq90zgGG8Ah8iOdoSf2PjpHf5ki09DMSbkg2KC7MraOHO2DAtlEjGxjqDQeGnHIHOktMWB0mj82VQ=="
-  "resolved" "https://registry.npmjs.org/grammy/-/grammy-1.18.3.tgz"
-  "version" "1.18.3"
+"grammy@^1.11.2", "grammy@^1.13.1", "grammy@^1.20.1":
+  "integrity" "sha512-eHvS0iOD6aos7NbwL1dhFE6JDiMGm/Qz2TKgetRg/SZ5BIVoUSVSU/mn8L01r1Q7i+ywG9uePzy5xpK5CkOrUA=="
+  "resolved" "https://registry.npmjs.org/grammy/-/grammy-1.20.3.tgz"
+  "version" "1.20.3"
   dependencies:
-    "@grammyjs/types" "3.2.2"
+    "@grammyjs/types" "^3.4.6"
     "abort-controller" "^3.0.0"
     "debug" "^4.3.4"
     "node-fetch" "^2.7.0"
@@ -2196,6 +2217,11 @@
   "integrity" "sha512-knxG2q4UC3u8stRGyAVJCOdxFmv5DZiRcdlIaAQXAbSfJya+OhopNotLQrstBhququ4ZpuKbDc/8S6mgXgPFPw=="
   "resolved" "https://registry.npmjs.org/is-unicode-supported/-/is-unicode-supported-0.1.0.tgz"
   "version" "0.1.0"
+
+"isexe@^2.0.0":
+  "integrity" "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw=="
+  "resolved" "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz"
+  "version" "2.0.0"
 
 "isomorphic-ws@^4.0.1":
   "integrity" "sha512-BhBvN2MBpWTaSHdWRb/bwdZJ1WaehQ2L1KngkCkfLUGF0mAWAT1sQUQacEmQ0jXkFw/czDXPNQSL5u2/Krsz1w=="
@@ -2562,6 +2588,13 @@
   dependencies:
     "bn.js" "4.11.6"
     "strip-hex-prefix" "1.0.0"
+
+"o-son@^1.0.1":
+  "integrity" "sha512-wWHDKHHL2+U6E9HoNc9GqZ14h4l8k8BK565bGk8P4jKqPRDlS/gSsyIP3Atq55CfJY9w7bg+Jyp0LIQv0g4aEg=="
+  "resolved" "https://registry.npmjs.org/o-son/-/o-son-1.0.2.tgz"
+  "version" "1.0.2"
+  dependencies:
+    "@deno/shim-deno" "~0.16.1"
 
 "o3@^1.0.3":
   "integrity" "sha512-f+4n+vC6s4ysy7YO7O2gslWZBUu8Qj2i2OUJOvjRxQva7jVjYjB29jrr9NCjmxZQR0gzrOcv1RnqoYOeMs5VRQ=="
@@ -3310,6 +3343,13 @@
   dependencies:
     "tr46" "~0.0.3"
     "webidl-conversions" "^3.0.0"
+
+"which@^2.0.2":
+  "integrity" "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA=="
+  "resolved" "https://registry.npmjs.org/which/-/which-2.0.2.tgz"
+  "version" "2.0.2"
+  dependencies:
+    "isexe" "^2.0.0"
 
 "wrap-ansi@^6.0.1":
   "integrity" "sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA=="

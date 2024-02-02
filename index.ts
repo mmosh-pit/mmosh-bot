@@ -5,7 +5,15 @@ import {
   HttpError,
   InlineKeyboard,
   NextFunction,
+  session,
 } from "grammy";
+import {
+  Conversation,
+  ConversationFlavor,
+  conversations,
+  createConversation,
+} from "@grammyjs/conversations";
+
 import { createSolanaAddress } from "./utils/web3/createSolanaAddress";
 import { getPrivateKeyBase58 } from "./utils/web3/getPrivateKeyBase58";
 import { getUserFromDB } from "./utils/users/getUserFromDB";
@@ -26,10 +34,16 @@ import { encryptData } from "./utils/encryptData";
 import { checkProfile } from "./utils/checkProfile";
 import { updateUserData } from "./utils/users/updateUserData";
 import { db } from "./config/mongoConfig";
+import { PublicKey } from "@solana/web3.js";
+import { updateMMOSHData } from "./utils/users/updateMMOSHData";
+import { getUserPoints } from "./utils/users/getUserPoints";
+
+type MyContext = Context & ConversationFlavor;
+type MyConversation = Conversation<MyContext>;
 
 const BOT_NAME = process.env.BOT_NAME!;
 
-const bot = new Bot(process.env.BOT_TOKEN!);
+const bot = new Bot<MyContext>(process.env.BOT_TOKEN!);
 
 const webLink = process.env.WEB_LINK!;
 
@@ -74,10 +88,19 @@ const checkUserDataMiddleware = async (ctx: Context, next: NextFunction) => {
 };
 
 bot.use(checkUserDataMiddleware);
+bot.use(conversations());
+bot.use(
+  session({
+    initial() {
+      // return empty object for now
+      return {};
+    },
+  }),
+);
 
 const buildMainMenuButtons = (id: number) => [
   [
-    InlineKeyboard.text("Claim Airdrop 🪂", "next-airdrop"),
+    InlineKeyboard.text("Earn Rewards 🤑", "next-airdrop"),
     InlineKeyboard.webApp("Check Bags 💰", `${bagsLink}?user=${id}`),
   ],
   [
@@ -88,6 +111,7 @@ const buildMainMenuButtons = (id: number) => [
     InlineKeyboard.webApp("Display Status 🏆", `${directoryUrl}?user=${id}`),
     InlineKeyboard.url("Join Group 👋", `https://t.me/mmoshpit`),
   ],
+  [InlineKeyboard.text("Connect Apps 🔐", "connect-app")],
 ];
 
 const buildAirdropMenuButtons = (id: number) => [
@@ -407,7 +431,7 @@ const showEarn = async (ctx: Context) => {
 const showAirdrop = async (ctx: Context) => {
   if (!ctx.from) return;
   const text =
-    "MMOSH Airdrop | Liquid Hearts Club ❤️‍🔥\n\nWe’re launching our native token $MMOSH with a massive AIRDROP before $MMOSH is listed on major exchanges on January 23, 2024. Stay tuned to the Airdrop post and Announcements section of our Telegram group for details as we get closer to the event.\n\nSo here’s how it works… the more points you collect, the greater your chance of winning big! Some quick facts: \n\n🏆11,111 airdrop winners will be chosen randomly! Winners will receive Airdrop Keys.\n\n🎲You’ll get one chance at a Key for each point you earn, so even if you have only 1 point… you’ll still have a chance to win. But the more points you collect, the greater your chances!\n\n🔑There are 7 Airdrop Keys (Gold, Silver, Bronze, Red, Green, Black & White) that will be distributed randomly to winners. Each Key represents a different Airdrop amount. Everyone who qualifies will receive at least one key!\n\n🏅Top prize is for a Gold Key  — an airdrop of over $1,000 in $MMOSH!\n\nWe’ll be sharing many ways you can earn points over the next few weeks. Two great ways to get started stacking points and snagging $MMOSH are right here.\n\nJoin our Airdrips, which are smaller and more frequent $MMOSH airdrops, and share your Activation link far and wide!\n\n";
+    "MMOSH offers dynamic rewards in the form of airdrops, points, giveaways, royalties and other incentives.\n\nRewards are based on your individual performance, participation in games and challenges and sometimes pure luck.\n\nIt all starts with sharing your Activation Link. Share it now to start earning points that can be swapped for $MMOSH, merch and more.";
 
   await ctx.reply(text, {
     reply_markup: {
@@ -533,14 +557,68 @@ const showClaimAirdrop = async (ctx: Context) => {
   await ctx.answerCallbackQuery();
 };
 
+const askForSolanaWallet = async (
+  conversation: MyConversation,
+  ctx: MyContext,
+): Promise<void> => {
+  const wallet = await conversation.form.text();
+
+  const user = await getUserPoints(ctx.from!.id);
+
+  if (!user) return;
+
+  const isWalletValid = updateMMOSHData(wallet, {
+    id: ctx.from!.id,
+    username: ctx.from!.username || "",
+    firstName: ctx.from!.first_name,
+    points: user.points || 0,
+  });
+
+  if (!isWalletValid) {
+    await ctx.reply(
+      "Sorry, I don’t see that address. Are you sure it’s the one you connected to your wallet? Please try again.",
+    );
+    return await askForSolanaWallet(conversation, ctx);
+  }
+};
+
+const linkMMOSH = async (conversation: MyConversation, ctx: MyContext) => {
+  if (!ctx.from) return;
+  await ctx.reply(
+    "Next, To enter the Solana wallet address that you used to connect to the web app in the message field below, and send it here.",
+  );
+  await askForSolanaWallet(conversation, ctx);
+
+  await ctx.reply(
+    "Nicely done! You’ve successfully connected your Solana wallet to the MMOSH.\n\nPlease [return to the web app](https://www.mmosh.app) and complete your registration.",
+    {
+      parse_mode: "Markdown",
+    },
+  );
+};
+
+const connectApps = async (ctx: MyContext) => {
+  await ctx.reply(
+    "Let’s connect your Telegram account to the MMOSH.\n\nFirst, please connect a Solana wallet to the [MMOSH web app](https://www.mmosh.app) and press the button when you’re done. We recommend Phantom, Solflare or Glow.",
+    {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: [[InlineKeyboard.text("Done ✅", "done-connect")]],
+      },
+    },
+  );
+};
+
+bot.use(createConversation(linkMMOSH));
+
 bot.command("main", showMenu);
 bot.command("bags", showCheckBags);
 bot.command("send", showSendTokens);
 bot.command("join", showJoinGroup);
 bot.command("status", showDisplayLeaderboard);
-bot.command("earn", showEarn);
-bot.command("airdrop", showAirdrop);
+bot.command("earn", showAirdrop);
 bot.command("swap", showSwap);
+bot.command("connect", connectApps);
 
 bot.callbackQuery("mark-done", checkTaskCompletion);
 bot.callbackQuery("next-task", toggleNextTask);
@@ -550,6 +628,9 @@ bot.callbackQuery("claim-airdrop", showClaimAirdrop);
 bot.callbackQuery("join-airdrip", joinAirdrip);
 bot.callbackQuery("show-link", showLink);
 bot.callbackQuery("subscribe-airdrips", subscribeAirdrips);
+bot.callbackQuery("done-connect", (ctx: MyContext) =>
+  ctx.conversation.enter("linkMMOSH"),
+);
 
 bot.api.setMyCommands([
   {
@@ -557,14 +638,13 @@ bot.api.setMyCommands([
     description: "Main Menu",
   },
   {
-    command: "airdrop",
-    description: "Earn Airdrops",
+    command: "earn",
+    description: "Earn Rewards",
   },
   {
     command: "bags",
     description: "Check Bags",
   },
-
   {
     command: "send",
     description: "Send Tokens",
@@ -581,10 +661,10 @@ bot.api.setMyCommands([
     command: "join",
     description: "Join Group",
   },
-  // {
-  //   command: "setprofile",
-  //   description: "Set Profile",
-  // },
+  {
+    command: "connect",
+    description: "Connect Apps",
+  },
 ]);
 
 const stopRunner = () => runner.isRunning() && runner.stop();
