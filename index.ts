@@ -88,7 +88,6 @@ const checkUserDataMiddleware = async (ctx: Context, next: NextFunction) => {
 };
 
 bot.use(checkUserDataMiddleware);
-bot.use(conversations());
 bot.use(
   session({
     initial() {
@@ -97,6 +96,7 @@ bot.use(
     },
   }),
 );
+bot.use(conversations());
 
 const buildMainMenuButtons = (id: number) => [
   [
@@ -567,12 +567,14 @@ const askForSolanaWallet = async (
 
   if (!user) return;
 
-  const isWalletValid = updateMMOSHData(wallet, {
+  const isWalletValid = await updateMMOSHData(wallet, {
     id: ctx.from!.id,
     username: ctx.from!.username || "",
     firstName: ctx.from!.first_name,
     points: user.points || 0,
   });
+
+  console.log("Result: ", isWalletValid);
 
   if (!isWalletValid) {
     await ctx.reply(
