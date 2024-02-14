@@ -1,0 +1,28 @@
+{
+  "keys": [
+    {
+      "keyName": "Gold Key",
+      "poolPercent": 40
+    },
+    {
+      "keyName": "Silver Key",
+      "poolPercent": 30
+    },
+    {
+      "keyName": "Bronze Key",
+      "poolPercent": 20
+    },
+    {
+      "keyName": "Red Key",
+      "poolPercent": 4
+    },
+    {
+      "keyName": "Green Key",
+      "poolPercent": 3
+    },
+    {
+      "keyName": "Black Key",
+      "poolPercent": 2
+    }
+  ]
+}
