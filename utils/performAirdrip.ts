@@ -15,21 +15,9 @@ import { Drop, AllocateTokens } from "./airdrip";
 import { sendNotifications } from "./notifications";
 import "dotenv/config";
 import * as fs from "fs";
-const path = require("path");
+import bs58 from "bs58";
 
-function readConfigFile(filePath: string): any {
-  try {
-    const data = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(data);
-  } catch (error) {
-    //console.error(`Error reading configuration file: ${error.message}`);
-    return null;
-  }
-}
-const configFile = "./guideSecret.json";
-// Get the absolute path by joining the project root and the relative path
-const absolutePath = path.join(__dirname, configFile);
-const secret = readConfigFile(absolutePath);
+const secret = process.env.AIRDRIP_SECRET_KEY!;
 
 //const endpoint = clusterApiUrl("devnet");
 const endpoint =
@@ -39,7 +27,8 @@ const endpoint =
 const connection = new Connection(endpoint);
 
 // const MINT_ADDRESS = "6XutmY2No17wK8AMxjwfGeqKPL1RyFR6d9u49VPJ5Nn4";
-const FROM_KEY_PAIR = Keypair.fromSecretKey(new Uint8Array(secret));
+
+const FROM_KEY_PAIR = Keypair.fromSecretKey(bs58.decode(secret));
 const NUM_DROPS_PER_TX = 10;
 const TX_INTERVAL = 1000;
 
@@ -77,6 +66,7 @@ async function generateTransactions(
   let result: Transaction[] = [];
 
   const numTransactions = Math.ceil(dropList.length / batchSize);
+  console.log("NUM TRANSACTIONS: ", numTransactions);
   for (let i = 0; i < numTransactions; i++) {
     let bulkTransaction = new Transaction();
     let lowerIndex = i * batchSize;
@@ -201,6 +191,8 @@ async function executeTransactions(
 //(
 export async function performAirdrip(airdripInfo: any) {
   // Step 3
+  console.log("Starting airdrip...");
+  console.log(" 1.");
   const MINT_ADDRESS = airdripInfo.mintAddress;
   const poolSize = airdripInfo.poolSize;
   console.log(`3 - Fetching Number of Decimals for Mint: ${MINT_ADDRESS}`);
@@ -221,7 +213,5 @@ export async function performAirdrip(airdripInfo: any) {
     FROM_KEY_PAIR,
   );
   console.log(txResults);
-  await sendNotifications(dropList);
+  await sendNotifications(dropList, airdripInfo.tokenSymbol);
 }
-
-//)();

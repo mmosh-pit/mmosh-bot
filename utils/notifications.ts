@@ -12,7 +12,7 @@ const getUsernameUrl = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`;
 const keyConfigFile = "../config/dropKeyConfig.json";
 const keyConfig = readConfigFile(keyConfigFile);
 
-async function createMessage(keyDistribution: any) {
+async function createMessage(keyDistribution: any, tokenSymbol?: string) {
   try {
     let MESSAGE = "Congratulations to the following winners!\n\n";
     let i = 0;
@@ -27,13 +27,13 @@ async function createMessage(keyDistribution: any) {
       } catch (error) {
         console.log(error);
       }
-      let text = `${keyDistribution[i].keyname} : ${username} ${keyDistribution[i].tokenNums} $LOVE.\n`;
+      let text = `${keyDistribution[i].keyname} : ${username} ${keyDistribution[i].tokenNums} ${tokenSymbol}.\n`;
       MESSAGE = MESSAGE + text;
     }
     const whiteKeyTokens = POOL / (100 * keyDistribution.length);
     MESSAGE =
       MESSAGE +
-      `\nAnd everyone else receive a White Key, worth more than ${whiteKeyTokens} $LOVE`;
+      `\nAnd everyone else receive a White Key, worth more than ${whiteKeyTokens} ${tokenSymbol}`;
     return MESSAGE;
   } catch (e) {
     console.log("error:" + e);
@@ -52,8 +52,11 @@ async function sendMessage(CHAT_ID: any, MESSAGE: string) {
   }
 }
 
-export async function sendNotifications(keyDistribution: any) {
-  const message = await createMessage(keyDistribution);
+export async function sendNotifications(
+  keyDistribution: any,
+  tokenSymbol?: string,
+) {
+  const message = await createMessage(keyDistribution, tokenSymbol);
   console.log(message);
   keyDistribution.forEach((winner: any) => {
     sendMessage(winner.telegramId, message || "");
