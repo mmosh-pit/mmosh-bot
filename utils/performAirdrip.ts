@@ -19,14 +19,10 @@ import bs58 from "bs58";
 
 const secret = process.env.AIRDRIP_SECRET_KEY!;
 
-//const endpoint = clusterApiUrl("devnet");
 const endpoint =
   process.env.NEXT_PUBLIC_SOLANA_CLUSTER ||
   clusterApiUrl((process.env.NETWORK as any) || "devnet");
-// const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 const connection = new Connection(endpoint);
-
-// const MINT_ADDRESS = "6XutmY2No17wK8AMxjwfGeqKPL1RyFR6d9u49VPJ5Nn4";
 
 const FROM_KEY_PAIR = Keypair.fromSecretKey(bs58.decode(secret));
 const NUM_DROPS_PER_TX = 10;
@@ -49,7 +45,6 @@ async function generateTransactions(
   fromWallet: PublicKey,
   MINT_ADDRESS: string,
 ): Promise<Transaction[]> {
-  console.log(`1 - Getting Source Token Account for`);
   let sourceAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     FROM_KEY_PAIR,
@@ -61,25 +56,19 @@ async function generateTransactions(
       commitment: "confirmed",
     },
   );
-  console.log(`Source Account: ${sourceAccount.address.toString()}`);
 
   let result: Transaction[] = [];
 
   const numTransactions = Math.ceil(dropList.length / batchSize);
-  console.log("NUM TRANSACTIONS: ", numTransactions);
   for (let i = 0; i < numTransactions; i++) {
     let bulkTransaction = new Transaction();
     let lowerIndex = i * batchSize;
     let upperIndex = (i + 1) * batchSize;
     for (let j = lowerIndex; j < upperIndex; j++) {
       if (dropList[j]) {
-        console.log(
-          `2 - Getting Destination Token Account for address ${dropList[j].publicAddress}`,
-        );
         try {
           new PublicKey(dropList[j].publicAddress);
         } catch (error: any) {
-          console.log("c...", error.message);
           fs.appendFile(
             "skipped-accounts.csv",
             Object.values(dropList[j]).join(",") + "\n",
@@ -105,9 +94,6 @@ async function generateTransactions(
             {
               commitment: "confirmed",
             },
-          );
-          console.log(
-            `    Destination Account: ${destinationAccount.address.toString()}`,
           );
         } catch (error) {
           fs.appendFile(
@@ -162,7 +148,6 @@ async function executeTransactions(
     (transaction, i, allTx) => {
       return new Promise((resolve) => {
         setTimeout(() => {
-          console.log(`Requesting Transaction ${i + 1}/${allTx.length}`);
           solanaConnection
             .getLatestBlockhash()
             .then(
@@ -191,27 +176,20 @@ async function executeTransactions(
 //(
 export async function performAirdrip(airdripInfo: any) {
   // Step 3
-  console.log("Starting airdrip...");
-  console.log(" 1.");
   const MINT_ADDRESS = airdripInfo.mintAddress;
   const poolSize = airdripInfo.poolSize;
-  console.log(`3 - Fetching Number of Decimals for Mint: ${MINT_ADDRESS}`);
   numberDecimals = await getNumberDecimals(MINT_ADDRESS);
-  console.log(`    Number of Decimals: ${numberDecimals}`);
 
   const dropList = await AllocateTokens(numberDecimals, poolSize);
-  console.log(`Initiating SOL drop from ${FROM_KEY_PAIR.publicKey.toString()}`);
+
+  console.log("Drop list: ", dropList);
+
   const transactionList = await generateTransactions(
     NUM_DROPS_PER_TX,
     dropList,
     FROM_KEY_PAIR.publicKey,
     MINT_ADDRESS,
   );
-  const txResults = await executeTransactions(
-    connection,
-    transactionList,
-    FROM_KEY_PAIR,
-  );
-  console.log(txResults);
+  await executeTransactions(connection, transactionList, FROM_KEY_PAIR);
   await sendNotifications(dropList, airdripInfo.tokenSymbol);
 }

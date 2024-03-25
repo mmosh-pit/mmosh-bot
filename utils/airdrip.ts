@@ -39,32 +39,32 @@ export const AllocateTokens = async (
   numberDecimals: number,
   POOL_SIZE: number,
 ): Promise<Drop[]> => {
-  try {
-    // Example usage:
-    const configFile = "../config/dropKeyConfig.json";
-    // Get the absolute path by joining the project root and the relative path
-    const absolutePath = path.join(__dirname, configFile);
-    const keyConfig = readConfigFile(absolutePath);
-    const keyDistribution = <Drop[]>[];
+  // Example usage:
+  const configFile = "../config/dropKeyConfig.json";
+  // Get the absolute path by joining the project root and the relative path
+  const absolutePath = path.join(__dirname, configFile);
+  const keyConfig = readConfigFile(absolutePath);
+  const keyDistribution = <Drop[]>[];
 
-    if (keyConfig) {
-      const candidatesList: Canditates[] = await getAllCandidates();
-      let winningIndexes: number[] = [];
-      let min = 0;
-      let max = candidatesList.length;
+  if (keyConfig) {
+    const candidatesList: Canditates[] = await getAllCandidates();
+    let winningIndexes: number[] = [];
+    let min = 0;
+    let max = candidatesList.length;
 
-      //remove portion needed for white key from POOL_SIZE
-      // let Remaining_Pool_Size = POOL_SIZE;
-      let Remaining_Pool_Size = POOL_SIZE - POOL_SIZE / 100;
+    //remove portion needed for white key from POOL_SIZE
+    // let Remaining_Pool_Size = POOL_SIZE;
+    let Remaining_Pool_Size = POOL_SIZE - POOL_SIZE / 100;
 
-      keyConfig.keys.forEach((key) => {
-        let random;
-        do {
-          random = Math.floor(Math.random() * (+max - +min)) + +min;
-        } while (winningIndexes.includes(random));
-        console.log(
-          "User Index selected for : " + key.keyName + " is " + random,
-        );
+    keyConfig.keys.forEach((key) => {
+      let random;
+      do {
+        random = Math.floor(Math.random() * (+max - +min)) + +min;
+      } while (
+        winningIndexes.includes(random) &&
+        winningIndexes.length < candidatesList.length
+      );
+      if (winningIndexes.length < candidatesList.length) {
         winningIndexes.push(random);
         let keyWinner = {
           keyname: key.keyName,
@@ -77,49 +77,47 @@ export const AllocateTokens = async (
           ),
         };
         keyDistribution.push(keyWinner);
-      });
-
-      let perWhiteKeyTokens = 0;
-      //if winners less than number of keys in list
-      if (candidatesList.length > winningIndexes.length) {
-        perWhiteKeyTokens = parseFloat(
-          (
-            POOL_SIZE /
-            (100 * (candidatesList.length - winningIndexes.length))
-          ).toFixed(numberDecimals),
-        );
-      } else {
-        console.log(
-          "White Key is not distributed as every candidate already got some key.",
-        );
       }
+    });
 
-      candidatesList.forEach((candidate, index) => {
-        if (!winningIndexes.includes(index)) {
-          let keyWinner = {
-            keyname: "White Key",
-            telegramId: candidate.telegramId,
-            publicAddress: candidate.addressPublicKey,
-            tokenNums: perWhiteKeyTokens,
-          };
-          keyDistribution.push(keyWinner);
-        }
-      });
-
-      fs.writeFile(
-        "keyDistribution.json",
-        JSON.stringify(keyDistribution),
-        "utf8",
-        function (err) {
-          if (err) throw err;
-        },
+    let perWhiteKeyTokens = 0;
+    //if winners less than number of keys in list
+    if (candidatesList.length > winningIndexes.length) {
+      perWhiteKeyTokens = parseFloat(
+        (
+          POOL_SIZE /
+          (100 * (candidatesList.length - winningIndexes.length))
+        ).toFixed(numberDecimals),
+      );
+    } else {
+      console.log(
+        "White Key is not distributed as every candidate already got some key.",
       );
     }
-    return keyDistribution;
-  } catch (err) {
-    console.error("Got error here: ", err);
-    return [];
+
+    candidatesList.forEach((candidate, index) => {
+      if (!winningIndexes.includes(index)) {
+        let keyWinner = {
+          keyname: "White Key",
+          telegramId: candidate.telegramId,
+          publicAddress: candidate.addressPublicKey,
+          tokenNums: perWhiteKeyTokens,
+        };
+        keyDistribution.push(keyWinner);
+      }
+    });
+
+    fs.writeFile(
+      "keyDistribution.json",
+      JSON.stringify(keyDistribution),
+      "utf8",
+      function (err) {
+        if (err) throw err;
+        console.log(`\nWrote key distributions to keyDistribution.json.`);
+      },
+    );
   }
+  return keyDistribution;
 };
 
 export async function dumpCandidatesData(data: AirdropWinner[]): Promise<any> {

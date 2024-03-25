@@ -31,6 +31,7 @@ import { joinAirdrip } from "./functions/joinAirdrip";
 import { showClaimAirdrop } from "./functions/showClaimAirdrop";
 import { showLink } from "./functions/showLink";
 import { checkUserDataMiddleware } from "./middlewares/checkUserDataMiddleware";
+import { checkForUserProfileNFT } from "./functions/checkForUserProfileNFT";
 
 type MyContext = Context & ConversationFlavor;
 type MyConversation = Conversation<MyContext>;
@@ -52,6 +53,9 @@ bot.use(conversations());
 bot.catch((error) => {
   console.log(error.message);
   console.log(error.stack);
+
+  if (error.ctx.chat?.type === "group") return;
+
   const genericErrorMessage =
     "Sorry, something went wrong. Please try again later or communicate with Support";
   try {
@@ -97,44 +101,71 @@ bot.callbackQuery("done-connect", (ctx: MyContext) =>
 );
 bot.callbackQuery("first-airdrip", firstAirdrip);
 
-bot.api.setMyCommands([
+bot.on("message", checkForUserProfileNFT);
+
+bot.api.setMyCommands(
+  [
+    {
+      command: "main",
+      description: "Main Menu",
+    },
+    {
+      command: "earn",
+      description: "Earn Rewards",
+    },
+    {
+      command: "bags",
+      description: "Check Bags",
+    },
+    {
+      command: "send",
+      description: "Send Tokens",
+    },
+    {
+      command: "swap",
+      description: "Swap Tokens",
+    },
+    {
+      command: "status",
+      description: "Display Status",
+    },
+    {
+      command: "join",
+      description: "Join Group",
+    },
+    {
+      command: "connect",
+      description: "Connect Apps",
+    },
+    {
+      command: "airdrop",
+      description: "Claim Airdrop",
+    },
+  ],
   {
-    command: "main",
-    description: "Main Menu",
+    scope: { type: "all_private_chats" },
   },
+);
+
+bot.api.setMyCommands(
+  [
+    {
+      command: "earn",
+      description: "Earn Rewards",
+    },
+    {
+      command: "join",
+      description: "Join Group",
+    },
+    {
+      command: "airdrop",
+      description: "Claim Airdrop",
+    },
+  ],
   {
-    command: "earn",
-    description: "Earn Rewards",
+    scope: { type: "all_group_chats" },
   },
-  {
-    command: "bags",
-    description: "Check Bags",
-  },
-  {
-    command: "send",
-    description: "Send Tokens",
-  },
-  {
-    command: "swap",
-    description: "Swap Tokens",
-  },
-  {
-    command: "status",
-    description: "Display Status",
-  },
-  {
-    command: "join",
-    description: "Join Group",
-  },
-  {
-    command: "connect",
-    description: "Connect Apps",
-  },
-  {
-    command: "airdrop",
-    description: "Claim Airdrop",
-  },
-]);
+);
 
 const stopRunner = () => runner.isRunning() && runner.stop();
 

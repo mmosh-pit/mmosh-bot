@@ -16,7 +16,7 @@ async function createMessage(keyDistribution: any, tokenSymbol?: string) {
   try {
     let MESSAGE = "Congratulations to the following winners!\n\n";
     let i = 0;
-    for (i = 0; i < keyConfig.keys.length; i++) {
+    for (i = 0; i < keyConfig.keys.length && i < keyDistribution.length; i++) {
       let username = keyDistribution[i].telegramId;
       try {
         const userDetail = await axios.post(getUsernameUrl, {
@@ -53,7 +53,7 @@ async function sendMessage(CHAT_ID: any, MESSAGE: string) {
 }
 
 export async function sendNotifications(
-  keyDistribution: any,
+  keyDistribution: any[],
   tokenSymbol?: string,
 ) {
   const message = await createMessage(keyDistribution, tokenSymbol);
