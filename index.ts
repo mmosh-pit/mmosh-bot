@@ -32,9 +32,11 @@ import { showClaimAirdrop } from "./functions/showClaimAirdrop";
 import { showLink } from "./functions/showLink";
 import { checkUserDataMiddleware } from "./middlewares/checkUserDataMiddleware";
 import { checkForUserProfileNFT } from "./functions/checkForUserProfileNFT";
-
-type MyContext = Context & ConversationFlavor;
-type MyConversation = Conversation<MyContext>;
+import { handleSettings } from "./functions/handleSettings";
+import { sendSettingsMessage } from "./functions/sendSettingsMessage";
+import { tokenGatingConversation } from "./functions/tokenGatingConversation";
+import { MyContext } from "./models/MyContext";
+import { MyConversation } from "./models/MyConversation";
 
 const bot = new Bot<MyContext>(process.env.BOT_TOKEN!);
 
@@ -70,7 +72,17 @@ const startLinkConversation = (
   linkMMOSH(conversation, ctx, bot);
 };
 
+const startTokenGatingConversation = (
+  conversation: MyConversation,
+  ctx: MyContext,
+) => {
+  tokenGatingConversation(conversation, ctx);
+};
+
 bot.use(createConversation(startLinkConversation));
+bot.use(createConversation(startTokenGatingConversation, {
+  id: "token-gating-conversation",
+}));
 
 bot.command("start", async (ctx) => {
   await start(ctx, bot);
@@ -84,6 +96,7 @@ bot.command("earn", showEarn);
 bot.command("swap", showSwap);
 bot.command("connect", connectApps);
 bot.command("airdrop", showAirdrop);
+bot.command("settings", handleSettings);
 
 bot.callbackQuery("main-menu", showMenu);
 bot.callbackQuery("cancel-connect", showMenu);
@@ -96,10 +109,21 @@ bot.callbackQuery("join-airdrip", joinAirdrip);
 bot.callbackQuery("show-link", showLink);
 bot.callbackQuery("subscribe-airdrips", subscribeAirdrips);
 bot.callbackQuery("connect-app", connectApps);
-bot.callbackQuery("done-connect", (ctx: MyContext) =>
-  ctx.conversation.enter("startLinkConversation"),
+bot.callbackQuery(
+  "done-connect",
+  (ctx: MyContext) => ctx.conversation.enter("startLinkConversation"),
 );
 bot.callbackQuery("first-airdrip", firstAirdrip);
+bot.callbackQuery("setup-settings", sendSettingsMessage);
+
+bot.on("callback_query:data", async (ctx) => {
+  console.log("Got callback query here: ", ctx.callbackQuery);
+
+  const data = JSON.parse(ctx.callbackQuery.data);
+  ctx.groupId = data.group_id;
+
+  await ctx.conversation.enter("token-gating-conversation");
+});
 
 bot.on("message", checkForUserProfileNFT);
 
@@ -146,6 +170,13 @@ bot.api.setMyCommands(
     scope: { type: "all_private_chats" },
   },
 );
+
+bot.api.setMyCommands([{
+  command: "settings",
+  description: "Setup bot group settings",
+}], {
+  scope: { type: "all_chat_administrators" },
+});
 
 bot.api.setMyCommands(
   [

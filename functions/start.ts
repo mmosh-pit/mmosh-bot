@@ -1,4 +1,3 @@
-import { ConversationFlavor } from "@grammyjs/conversations";
 import {
   Api,
   Bot,
@@ -8,6 +7,7 @@ import {
   InlineKeyboard,
   RawApi,
 } from "grammy";
+import { MyContext } from "../models/MyContext";
 import { encryptData } from "../utils/encryptData";
 import { getUserFromDB } from "../utils/users/getUserFromDB";
 import { saveUserData } from "../utils/users/saveUserData";
@@ -16,8 +16,6 @@ import { updateChatId } from "../utils/users/updateChatId";
 import { createSolanaAddress } from "../utils/web3/createSolanaAddress";
 import { getPrivateKeyBase58 } from "../utils/web3/getPrivateKeyBase58";
 import { buildMainMenuButtons } from "./buildMainMenuButtons";
-
-type MyContext = Context & ConversationFlavor;
 
 export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
   if (!ctx.from) return;

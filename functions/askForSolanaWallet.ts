@@ -1,11 +1,9 @@
-import { Conversation, ConversationFlavor } from "@grammyjs/conversations";
-import { Api, Bot, Context, RawApi } from "grammy";
+import { Api, Bot, RawApi } from "grammy";
+import { MyContext } from "../models/MyContext";
+import { MyConversation } from "../models/MyConversation";
 import { getUserPoints } from "../utils/users/getUserPoints";
 import { updateMMOSHData } from "../utils/users/updateMMOSHData";
 import { showMenu } from "./showMenu";
-
-type MyContext = Context & ConversationFlavor;
-type MyConversation = Conversation<MyContext>;
 
 export const askForSolanaWallet = async (
   conversation: MyConversation,
