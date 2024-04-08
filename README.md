@@ -1,4 +1,4 @@
-## MORAL PANIC TELEGRAM BOT
+## MMOSH TELEGRAM BOT
 
 This repository contains the logic of how this bot works, the entry level to communicate with the Moral Panic Protocol
 
