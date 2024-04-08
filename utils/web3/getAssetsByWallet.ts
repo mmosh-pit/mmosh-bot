@@ -1,17 +1,17 @@
 import axios from "axios";
 
-export async function getTokenMetadata(tokenAddress: string) {
+export async function getAssetsByWallet(wallet: string, fungible: boolean) {
   const response = await axios.post(
     process.env.SOLANA_CLUSTER!,
     {
       jsonrpc: "2.0",
       id: "text",
-      method: "getAsset",
+      method: "getAssetsByOwner",
       params: {
-        id: tokenAddress,
-        options: {
-          showFungible: true,
-          showInscription: true,
+        ownerAddress: wallet,
+        displayOptions: {
+          showFungible: fungible,
+          showInscription: fungible,
           showCollectionMetadata: true,
         },
       },
