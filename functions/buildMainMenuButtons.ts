@@ -6,6 +6,7 @@ const bagsLink = `${webLink}/bags`;
 const directoryUrl = `${webLink}/directory`;
 const sendTokensUrl = `${webLink}/send_tokens`;
 const swapTokensUrl = `${webLink}/swap_coins`;
+const linkWalletUrl = `${webLink}/link_wallet`;
 
 export const buildMainMenuButtons = (id: number) => [
   [
@@ -20,5 +21,8 @@ export const buildMainMenuButtons = (id: number) => [
     InlineKeyboard.webApp("Display Status 🏆", `${directoryUrl}?user=${id}`),
     InlineKeyboard.url("Join Group 👋", `https://t.me/mmoshpit`),
   ],
-  [InlineKeyboard.text("Connect Apps 🔐", "connect-app")],
+  [
+    InlineKeyboard.text("Connect Apps 🔐", "connect-app"),
+    InlineKeyboard.webApp("Link Wallet", `${linkWalletUrl}?user=${id}`),
+  ],
 ];

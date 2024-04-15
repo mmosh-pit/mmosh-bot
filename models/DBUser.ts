@@ -14,4 +14,5 @@ export type DBUser = {
   chatId?: number;
   points?: number;
   airdripSubscribe?: boolean;
+  profilenft?: string;
 };
