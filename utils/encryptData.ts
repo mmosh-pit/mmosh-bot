@@ -4,7 +4,6 @@ export function encryptData(data: any): string {
   const encryptionMethod = process.env.ENCRYPTION_METHOD!;
   const secretKey = process.env.SECRET_KEY!;
   const secretIv = process.env.SECRET_IV!;
-  console.log(encryptionMethod, secretKey, secretIv)
 
   const key = crypto
     .createHash("sha512")
