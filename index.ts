@@ -1,5 +1,6 @@
 import { Bot, InlineKeyboard, session } from "grammy";
 import { conversations, createConversation } from "@grammyjs/conversations";
+import axios from "axios";
 
 import "dotenv/config";
 
@@ -14,6 +15,7 @@ import {
   startTasks,
   toggleNextTask,
 } from "./functions/tasks";
+
 import { showCheckBags } from "./functions/showCheckBags";
 import { showDisplayLeaderboard } from "./functions/showDisplayLeaderboard";
 import { showJoinGroup } from "./functions/showJoinGroup";
@@ -47,10 +49,9 @@ bot.use(
     initial() {
       return {};
     },
-  }),
+  })
 );
 bot.use(conversations());
-
 bot.catch((error) => {
   console.log(error.message);
   console.log(error.stack);
@@ -66,14 +67,13 @@ bot.catch((error) => {
 
 const startLinkConversation = (
   conversation: MyConversation,
-  ctx: MyContext,
+  ctx: MyContext
 ) => {
   linkMMOSH(conversation, ctx, bot);
 };
-
 const startTokenGatingConversation = async (
   conversation: MyConversation,
-  ctx: MyContext,
+  ctx: MyContext
 ) => {
   const groupId = ctx.groupId;
   const res = ctx.tokenType;
@@ -146,7 +146,7 @@ const startTokenGatingConversation = async (
           reply_markup: {
             inline_keyboard: [[cancelButton]],
           },
-        },
+        }
       );
       const { message } = await conversation.wait();
 
@@ -173,8 +173,8 @@ const startTokenGatingConversation = async (
       ctx.from!.id,
       address!,
       tokenType,
-      amount,
-    ),
+      amount
+    )
   );
 
   await ctx.reply("Your rules for accessing your group are now set!");
@@ -184,8 +184,9 @@ bot.use(createConversation(startLinkConversation));
 bot.use(
   createConversation(startTokenGatingConversation, {
     id: "token-gating-conversation",
-  }),
+  })
 );
+console.log("in startTokenGatingConversation");
 
 bot.command("start", async (ctx) => {
   await start(ctx, bot);
@@ -213,7 +214,7 @@ bot.callbackQuery("show-link", showLink);
 bot.callbackQuery("subscribe-airdrips", subscribeAirdrips);
 bot.callbackQuery("connect-app", connectApps);
 bot.callbackQuery("done-connect", (ctx: MyContext) =>
-  ctx.conversation.enter("startLinkConversation"),
+  ctx.conversation.enter("startLinkConversation")
 );
 bot.callbackQuery("first-airdrip", firstAirdrip);
 bot.callbackQuery("setup-settings", sendSettingsMessage);
@@ -228,13 +229,13 @@ bot.on("callback_query:data", async (ctx) => {
     await saveGroupTokenGatingInfo(
       data.groupId,
       group.username || group.title,
-      ctx.from.id,
+      ctx.from.id
     );
     await askTypeOfToken(
       ctx,
       ctx.from.id,
       group.username || group.title,
-      data.groupId,
+      data.groupId
     );
     await ctx.deleteMessage();
     ctx.answerCallbackQuery();
@@ -246,6 +247,57 @@ bot.on("callback_query:data", async (ctx) => {
     ctx.groupId = data.groupId;
     await ctx.conversation.enter("token-gating-conversation");
     return;
+  }
+});
+
+bot.on("message:text", async (ctx) => {
+  const text = ctx.message.text.toLowerCase();
+
+  const apiUrl = "https://mmoshapi-uodcouqmia-uc.a.run.app/generate/";
+  const postData = {
+    prompt: text,
+  };
+
+  try {
+    // Perform the POST request using axios
+    const response = await axios.post(apiUrl, postData, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    console.log(response.data);
+    //await ctx.reply(response.data);
+
+    const geminiResponse = response.data;
+
+    switch (geminiResponse) {
+      case "/start":
+        await start(ctx, bot);
+        break;
+      case "/earn":
+        showEarn(ctx);
+        break;
+      case "/status":
+        showDisplayLeaderboard(ctx);
+        break;
+      case "/main":
+        showMenu(ctx);
+        break;
+      case "/bags":
+        showCheckBags(ctx);
+        break;
+      case "/connect":
+        connectApps(ctx);
+        break;
+      case "/settings":
+        handleSettings(ctx);
+        break;
+      default:
+        await ctx.reply(geminiResponse);
+    }
+  } catch (error) {
+    console.error("Failed to fetch from API:", error);
+    await ctx.reply("There was an error processing your request.");
   }
 });
 
@@ -292,7 +344,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_private_chats" },
-  },
+  }
 );
 
 bot.api.setMyCommands(
@@ -304,7 +356,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_chat_administrators" },
-  },
+  }
 );
 
 bot.api.setMyCommands(
@@ -324,7 +376,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_group_chats" },
-  },
+  }
 );
 
 const stopRunner = () => runner.isRunning() && runner.stop();
