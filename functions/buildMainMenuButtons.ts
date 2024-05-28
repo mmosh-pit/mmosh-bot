@@ -23,6 +23,7 @@ export const buildMainMenuButtons = (id: number) => [
   ],
   [
     InlineKeyboard.text("Connect Apps 🔐", "connect-app"),
-    InlineKeyboard.webApp("Link Wallet", `${linkWalletUrl}?user=${id}`),
+    InlineKeyboard.webApp("Link Wallet 🔗", `${linkWalletUrl}?user=${id}`),
   ],
+  [InlineKeyboard.text("Verify ✅", "verify")],
 ];

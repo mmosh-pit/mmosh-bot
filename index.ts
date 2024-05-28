@@ -38,6 +38,7 @@ import { saveGroupTokenGatingInfo } from "./utils/groups/saveGroupTokenGatingInf
 import { Chat } from "grammy/types";
 import { updateGroupTokenGatingInfo } from "./utils/groups/updateGroupTokenGatingInfo";
 import { PublicKey } from "@solana/web3.js";
+import { handleVerify } from "./functions/handleVerify";
 
 const bot = new Bot<MyContext>(process.env.BOT_TOKEN!);
 
@@ -49,7 +50,7 @@ bot.use(
     initial() {
       return {};
     },
-  })
+  }),
 );
 bot.use(conversations());
 bot.catch((error) => {
@@ -67,13 +68,13 @@ bot.catch((error) => {
 
 const startLinkConversation = (
   conversation: MyConversation,
-  ctx: MyContext
+  ctx: MyContext,
 ) => {
   linkMMOSH(conversation, ctx, bot);
 };
 const startTokenGatingConversation = async (
   conversation: MyConversation,
-  ctx: MyContext
+  ctx: MyContext,
 ) => {
   const groupId = ctx.groupId;
   const res = ctx.tokenType;
@@ -146,7 +147,7 @@ const startTokenGatingConversation = async (
           reply_markup: {
             inline_keyboard: [[cancelButton]],
           },
-        }
+        },
       );
       const { message } = await conversation.wait();
 
@@ -173,8 +174,8 @@ const startTokenGatingConversation = async (
       ctx.from!.id,
       address!,
       tokenType,
-      amount
-    )
+      amount,
+    ),
   );
 
   await ctx.reply("Your rules for accessing your group are now set!");
@@ -184,9 +185,8 @@ bot.use(createConversation(startLinkConversation));
 bot.use(
   createConversation(startTokenGatingConversation, {
     id: "token-gating-conversation",
-  })
+  }),
 );
-console.log("in startTokenGatingConversation");
 
 bot.command("start", async (ctx) => {
   await start(ctx, bot);
@@ -201,7 +201,9 @@ bot.command("swap", showSwap);
 bot.command("connect", connectApps);
 bot.command("airdrop", showAirdrop);
 bot.command("settings", handleSettings);
+bot.command("verify", handleVerify);
 
+bot.callbackQuery("verify", handleVerify);
 bot.callbackQuery("main-menu", showMenu);
 bot.callbackQuery("cancel-connect", showMenu);
 bot.callbackQuery("mark-done", checkTaskCompletion);
@@ -214,7 +216,7 @@ bot.callbackQuery("show-link", showLink);
 bot.callbackQuery("subscribe-airdrips", subscribeAirdrips);
 bot.callbackQuery("connect-app", connectApps);
 bot.callbackQuery("done-connect", (ctx: MyContext) =>
-  ctx.conversation.enter("startLinkConversation")
+  ctx.conversation.enter("startLinkConversation"),
 );
 bot.callbackQuery("first-airdrip", firstAirdrip);
 bot.callbackQuery("setup-settings", sendSettingsMessage);
@@ -229,13 +231,13 @@ bot.on("callback_query:data", async (ctx) => {
     await saveGroupTokenGatingInfo(
       data.groupId,
       group.username || group.title,
-      ctx.from.id
+      ctx.from.id,
     );
     await askTypeOfToken(
       ctx,
       ctx.from.id,
       group.username || group.title,
-      data.groupId
+      data.groupId,
     );
     await ctx.deleteMessage();
     ctx.answerCallbackQuery();
@@ -344,7 +346,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_private_chats" },
-  }
+  },
 );
 
 bot.api.setMyCommands(
@@ -356,7 +358,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_chat_administrators" },
-  }
+  },
 );
 
 bot.api.setMyCommands(
@@ -376,7 +378,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_group_chats" },
-  }
+  },
 );
 
 const stopRunner = () => runner.isRunning() && runner.stop();

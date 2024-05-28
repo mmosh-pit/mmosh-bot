@@ -3,6 +3,7 @@ import { MyContext } from "../models/MyContext";
 import { encryptData } from "../utils/encryptData";
 import { generateLink } from "../utils/users/generateLink";
 import { getLinkedUser } from "../utils/users/getLinkedUser";
+import { getReferredUser } from "../utils/users/getReferredUser";
 import { getUserFromDB } from "../utils/users/getUserFromDB";
 import { saveUserData } from "../utils/users/saveUserData";
 import { updateAndSaveReferData } from "../utils/users/updateAndSaveReferData";
@@ -14,7 +15,6 @@ import { buildMainMenuButtons } from "./buildMainMenuButtons";
 export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
   if (!ctx.from) return;
   try {
-    // TODO: change this for MOTO's Telegram ID
     const referrerId = ctx.message?.text?.replace("/start", "") || "1294956737";
 
     const waitText = "Wait for a moment to the bot to initialize...";
@@ -103,15 +103,17 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
             );
           }
 
-          const link = await generateLink(newUser.addressPublicKey);
+          const firstText = `Welcome to the MMOSH! 👊\n\nBy joining us through ${referrer.firstName}’s activation link, you earned 100 Points that can be redeemed for $MMOSH, merch and more! Send them [a thank you message](https://t.me/${referrer.username}) for inviting you to MMOSH.`;
 
-          const firstText = `Welcome to the MMOSH! 👊\n\nBy joining us through ${referrer.firstName}’s activation link, you earned 100 Points that can be redeemed for $MMOSH, merch and more! Send them a thank you message for inviting you to MMOSH.\n📬 We’ve sent you an invitation to join MMOSH DAO, and we’ll convert your Points to tokens once you’ve minted a Profile NFT to become a member of the DAO.\nHere’s your new Social Wallet address:\n\n${newUser.addressPublicKey}\n\nNext, verify your Telegram account on the MMOSH app by following this link:\n\n${link}\n\nThis is an important step to protect your tokens in the event you lose access to your Telegram account.`;
-
-          const lastText = `Finally, here’s your personal activation link. Share it with others to earn points and royalties while you build up your Guild!\n\nhttps://t.me/mmoshbot?start=${ctx.from.id}`;
+          const lastText = `Here’s the address of your new Social Wallet:\n\n${newUser.addressPublicKey}\n\nTo learn more about all the wholesome goodness provided by this bot, just ask me a question in the message field or select one of the buttons below, which are available from the /main menu at any time:`;
 
           await ctx.reply(firstText);
 
-          await ctx.reply(lastText);
+          await ctx.reply(lastText, {
+            reply_markup: {
+              inline_keyboard: buildMainMenuButtons(ctx.from.id),
+            },
+          });
 
           return;
         }
@@ -129,15 +131,16 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
       messageEntity.message_id,
     );
 
-    // await ctx.reply(text);
-    // await ctx.reply(savedUser?.addressPublicKey || "");
-    // await ctx.reply(secondText, {
-    //   reply_markup: {
-    //     inline_keyboard: [
-    //       [InlineKeyboard.text("Let’s Win! 🏆", "start-tasks")],
-    //     ],
-    //   },
-    // });
+    const referredUser = await getReferredUser(savedUser._id!);
+
+    const text = `Welcome back to the MMOSH! 👊\n\nYou were originally invited through ${referredUser?.firstName}’s activation link. You can reach them [by direct message here](https://t.me/${referredUser?.username}).\n\nAs a reminder, here’s the address of your new Social Wallet:\n\n${savedUser.addressPublicKey}\n\nTo learn more about all the wholesome goodness provided by this bot, just ask me a question in the message field or select one of the buttons below, which are available from the /main menu at any time:`;
+
+    await ctx.reply(text, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: buildMainMenuButtons(ctx.from.id),
+      },
+    });
   } catch (err) {
     if (err instanceof GrammyError) {
       console.log("Grammy error!");
