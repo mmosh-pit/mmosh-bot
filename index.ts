@@ -50,7 +50,7 @@ bot.use(
     initial() {
       return {};
     },
-  }),
+  })
 );
 bot.use(conversations());
 bot.catch((error) => {
@@ -68,13 +68,13 @@ bot.catch((error) => {
 
 const startLinkConversation = (
   conversation: MyConversation,
-  ctx: MyContext,
+  ctx: MyContext
 ) => {
   linkMMOSH(conversation, ctx, bot);
 };
 const startTokenGatingConversation = async (
   conversation: MyConversation,
-  ctx: MyContext,
+  ctx: MyContext
 ) => {
   const groupId = ctx.groupId;
   const res = ctx.tokenType;
@@ -147,7 +147,7 @@ const startTokenGatingConversation = async (
           reply_markup: {
             inline_keyboard: [[cancelButton]],
           },
-        },
+        }
       );
       const { message } = await conversation.wait();
 
@@ -174,8 +174,8 @@ const startTokenGatingConversation = async (
       ctx.from!.id,
       address!,
       tokenType,
-      amount,
-    ),
+      amount
+    )
   );
 
   await ctx.reply("Your rules for accessing your group are now set!");
@@ -185,7 +185,7 @@ bot.use(createConversation(startLinkConversation));
 bot.use(
   createConversation(startTokenGatingConversation, {
     id: "token-gating-conversation",
-  }),
+  })
 );
 
 bot.command("start", async (ctx) => {
@@ -216,7 +216,7 @@ bot.callbackQuery("show-link", showLink);
 bot.callbackQuery("subscribe-airdrips", subscribeAirdrips);
 bot.callbackQuery("connect-app", connectApps);
 bot.callbackQuery("done-connect", (ctx: MyContext) =>
-  ctx.conversation.enter("startLinkConversation"),
+  ctx.conversation.enter("startLinkConversation")
 );
 bot.callbackQuery("first-airdrip", firstAirdrip);
 bot.callbackQuery("setup-settings", sendSettingsMessage);
@@ -231,13 +231,13 @@ bot.on("callback_query:data", async (ctx) => {
     await saveGroupTokenGatingInfo(
       data.groupId,
       group.username || group.title,
-      ctx.from.id,
+      ctx.from.id
     );
     await askTypeOfToken(
       ctx,
       ctx.from.id,
       group.username || group.title,
-      data.groupId,
+      data.groupId
     );
     await ctx.deleteMessage();
     ctx.answerCallbackQuery();
@@ -254,10 +254,12 @@ bot.on("callback_query:data", async (ctx) => {
 
 bot.on("message:text", async (ctx) => {
   const text = ctx.message.text.toLowerCase();
+  const username = ctx.from.id ? ctx.from.id : "unknown_user";
 
   const apiUrl = "https://mmoshapi-uodcouqmia-uc.a.run.app/generate/";
   const postData = {
     prompt: text,
+    username: String(username),
   };
 
   try {
@@ -294,6 +296,8 @@ bot.on("message:text", async (ctx) => {
       case "/settings":
         handleSettings(ctx);
         break;
+      case "/join":
+        showJoinGroup(ctx);
       default:
         await ctx.reply(geminiResponse);
     }
@@ -346,7 +350,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_private_chats" },
-  },
+  }
 );
 
 bot.api.setMyCommands(
@@ -358,7 +362,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_chat_administrators" },
-  },
+  }
 );
 
 bot.api.setMyCommands(
@@ -378,7 +382,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_group_chats" },
-  },
+  }
 );
 
 const stopRunner = () => runner.isRunning() && runner.stop();
