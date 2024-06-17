@@ -251,15 +251,25 @@ bot.on("callback_query:data", async (ctx) => {
     return;
   }
 });
+let bot_name = ""
+
+bot.api.getMe().then((botInfo) => {
+  console.log('Bot name:', botInfo.first_name);
+  bot_name = botInfo.first_name;
+}).catch((error) => {
+  console.error('Error fetching bot info:', error);
+});
 
 bot.on("message:text", async (ctx) => {
   const text = ctx.message.text.toLowerCase();
   const username = ctx.from.id ? ctx.from.id : "unknown_user";
 
+  //const apiUrl = "http://localhost:8080/generate/";
   const apiUrl = "https://mmoshapi-uodcouqmia-uc.a.run.app/generate/";
   const postData = {
     prompt: text,
     username: String(username),
+    botname: bot_name
   };
 
   try {
