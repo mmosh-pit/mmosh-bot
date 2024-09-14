@@ -258,15 +258,16 @@ bot.on("message:text", async (ctx) => {
   const text = ctx.message.text.toLowerCase();
   const username = ctx.from.id ? ctx.from.id : "unknown_user";
 
-  // Define the list of coins
-  const coinsList = [""]; // e.g ["BTC", "Eth"]
+  const namespaces = ["facts"]; 
+  const metafield = "";
 
   //const apiUrl = "http://localhost:8080/generate/";
-  const apiUrl = "https://mmoshapi-uodcouqmia-uc.a.run.app/generate/";
+  const apiUrl = "https://mmoshapi-471939176450.us-central1.run.app/generate/";
   const postData = {
     prompt: text,
     username: String(username),
-    coinsList: coinsList
+    namespaces: namespaces,
+    metafield: metafield
   };
   try {
     // Perform the POST request using axios
