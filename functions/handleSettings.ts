@@ -1,7 +1,27 @@
 import { Context, InlineKeyboard } from "grammy";
+import { settingsUrl } from "./buildMainMenuButtons";
 
 export async function handleSettings(ctx: Context) {
-  if (!["group", "supergroup"].includes(ctx.chat?.type || "")) return;
+  if (!["group", "supergroup"].includes(ctx.chat?.type || "")) {
+    if (!ctx.from) return;
+    const text =
+      "Get your private keys, manage your accounts and tailor your notifications in your settings.";
+
+    await ctx.reply(text, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            InlineKeyboard.webApp(
+              "Settings",
+              `${settingsUrl}?user=${ctx.from!.id}`,
+            ),
+          ],
+        ],
+      },
+    });
+
+    return;
+  }
   const bot = await ctx.getChatMember(ctx.me.id);
   const user = await ctx.getChatMember(ctx.from!.id);
 

@@ -1,8 +1,5 @@
 import { Context, InlineKeyboard } from "grammy";
-
-const webLink = process.env.WEB_LINK!;
-
-const swapTokensUrl = `${webLink}/swap_coins`;
+import { swapTokensUrl } from "./buildMainMenuButtons";
 
 export const showSwap = async (ctx: Context) => {
   if (!ctx.from) return;

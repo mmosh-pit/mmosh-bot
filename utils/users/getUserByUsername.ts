@@ -1,8 +1,8 @@
-import { db } from "../config/mongoConfig";
-import { DBUser } from "../models/DBUser";
+import { db } from "../../config/mongoConfig";
+import { DBUser } from "../../models/DBUser";
 
 export async function getUserByUsername(
-  username?: string
+  username?: string,
 ): Promise<DBUser | null> {
   if (!username) return null;
 

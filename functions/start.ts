@@ -1,21 +1,33 @@
 import { Api, Bot, Context, GrammyError, HttpError, RawApi } from "grammy";
+import { DBUser } from "../models/DBUser";
 import { MyContext } from "../models/MyContext";
-import { encryptData } from "../utils/encryptData";
+import { generateWallet } from "../utils/generateWallet";
 import { generateLink } from "../utils/users/generateLink";
 import { getLinkedUser } from "../utils/users/getLinkedUser";
 import { getReferredUser } from "../utils/users/getReferredUser";
+import { getUserByProfileAddress } from "../utils/users/getUserByProfileAddress";
+import { getUserByWallet } from "../utils/users/getUserByWallet";
 import { getUserFromDB } from "../utils/users/getUserFromDB";
 import { saveUserData } from "../utils/users/saveUserData";
 import { updateAndSaveReferData } from "../utils/users/updateAndSaveReferData";
 import { updateChatId } from "../utils/users/updateChatId";
-import { createSolanaAddress } from "../utils/web3/createSolanaAddress";
-import { getPrivateKeyBase58 } from "../utils/web3/getPrivateKeyBase58";
 import { buildMainMenuButtons } from "./buildMainMenuButtons";
 
 export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
   if (!ctx.from) return;
   try {
-    const referrerId = ctx.message?.text?.replace("/start", "") || "1294956737";
+    let referrerId =
+      ctx.message?.text?.replace("/start", "") ||
+      process.env.NEXT_PUBLIC_GENESIS_PROFILE!;
+
+    let incomingWalletAddress = "";
+
+    if (referrerId.includes(",")) {
+      const splitted = referrerId.split(",");
+      incomingWalletAddress = splitted[splitted.length - 1];
+
+      referrerId = splitted[0];
+    }
 
     const waitText = "Wait for a moment to the bot to initialize...";
 
@@ -28,7 +40,6 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
     if (!savedUser) {
       const profilePhotos = await ctx.api.getUserProfilePhotos(ctx.from.id);
 
-      const newAddress = createSolanaAddress();
       const photo = profilePhotos.photos[0];
 
       const file = photo
@@ -37,12 +48,11 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
           : { file_path: "" }
         : { file_path: "" };
 
-      const pKey = getPrivateKeyBase58(newAddress.secretKey);
-      const encryptedKey = encryptData(pKey);
+      const wallet = await generateWallet(incomingWalletAddress);
 
       const newUser = {
-        addressPrivateKey: encryptedKey,
-        addressPublicKey: newAddress.publicKey.toBase58(),
+        addressPrivateKey: wallet.pKey,
+        addressPublicKey: wallet.address,
         bio: (chat as any).bio || "",
         firstName: ctx.from.first_name,
         lastName: ctx.from.last_name || "",
@@ -56,17 +66,25 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
       };
 
       const insertedId = await saveUserData(newUser);
+
+      let referrerUser: DBUser | null;
+
       if (referrerId) {
-        const referrer = await getUserFromDB(Number(referrerId));
+        const referrer = await getUserByProfileAddress(referrerId);
         const mmoshReferrerData = await getLinkedUser(Number(referrerId));
 
-        if (referrer?._id) {
-          await updateAndSaveReferData(
-            referrer?._id,
-            referrer?.telegramId,
-            insertedId,
-            ctx.from.id,
-          );
+        if (referrer) {
+          referrerUser = await getUserByWallet(referrer.wallet);
+
+          if (referrerUser) {
+            await updateAndSaveReferData(
+              referrerUser._id!,
+              referrer.telegram.id,
+              insertedId,
+              ctx.from.id,
+            );
+          }
+
           await bot.api.deleteMessage(
             messageEntity.chat.id,
             messageEntity.message_id,
@@ -96,14 +114,14 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
           );
 
           if (!mmoshReferrerData) {
-            const link = await generateLink(referrer.addressPublicKey);
+            const link = await generateLink(referrerUser?.addressPublicKey!);
             await bot.api.sendMessage(
               Number(referrerId),
               `Next, earn 250 points for verifying your Telegram account by following this link: ${link}\nThis is an important step to protect your tokens in the event you lose access to your Telegram account.`,
             );
           }
 
-          const firstText = `Welcome to the MMOSH! 👊\n\nBy joining us through ${referrer.firstName}’s activation link, you earned 100 Points that can be redeemed for $MMOSH, merch and more! Send them [a thank you message](https://t.me/${referrer.username}) for inviting you to MMOSH.`;
+          const firstText = `Welcome to the MMOSH! 👊\n\nBy joining us through ${referrerUser?.firstName}’s activation link, you earned 100 Points that can be redeemed for $MMOSH, merch and more! Send them [a thank you message](https://t.me/${referrerUser?.telegramId}) for inviting you to MMOSH.`;
 
           const lastText = `Here’s the address of your new Social Wallet:\n\n${newUser.addressPublicKey}\n\nTo learn more about all the wholesome goodness provided by this bot, just ask me a question in the message field or select one of the buttons below, which are available from the /main menu at any time:`;
 

@@ -1,4 +1,4 @@
-import { Wallet } from "@project-serum/anchor";
+import { Wallet } from "@coral-xyz/anchor";
 import { bs58 } from "@project-serum/anchor/dist/cjs/utils/bytes";
 import { Keypair } from "@solana/web3.js";
 import { Connectivity } from "liquidhearts";

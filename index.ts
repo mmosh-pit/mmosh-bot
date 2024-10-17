@@ -39,6 +39,14 @@ import { Chat } from "grammy/types";
 import { updateGroupTokenGatingInfo } from "./utils/groups/updateGroupTokenGatingInfo";
 import { PublicKey } from "@solana/web3.js";
 import { handleVerify } from "./functions/handleVerify";
+import { handleHelp } from "./functions/handleHelp";
+import { handleCoins } from "./functions/handleCoins";
+import { handleCommunities } from "./functions/handleCommunities";
+import { handleMembers } from "./functions/handleMembers";
+import { handleRewards } from "./functions/handleRewards";
+import { handleAtm } from "./functions/handleAtm";
+import { handleProfile } from "./functions/handleMyProfile";
+import { handleJoinTheClub } from "./functions/handleJoinTheClub";
 
 const bot = new Bot<MyContext>(process.env.BOT_TOKEN!);
 
@@ -50,7 +58,7 @@ bot.use(
     initial() {
       return {};
     },
-  })
+  }),
 );
 bot.use(conversations());
 bot.catch((error) => {
@@ -68,13 +76,14 @@ bot.catch((error) => {
 
 const startLinkConversation = (
   conversation: MyConversation,
-  ctx: MyContext
+  ctx: MyContext,
 ) => {
   linkMMOSH(conversation, ctx, bot);
 };
+
 const startTokenGatingConversation = async (
   conversation: MyConversation,
-  ctx: MyContext
+  ctx: MyContext,
 ) => {
   const groupId = ctx.groupId;
   const res = ctx.tokenType;
@@ -147,7 +156,7 @@ const startTokenGatingConversation = async (
           reply_markup: {
             inline_keyboard: [[cancelButton]],
           },
-        }
+        },
       );
       const { message } = await conversation.wait();
 
@@ -174,8 +183,8 @@ const startTokenGatingConversation = async (
       ctx.from!.id,
       address!,
       tokenType,
-      amount
-    )
+      amount,
+    ),
   );
 
   await ctx.reply("Your rules for accessing your group are now set!");
@@ -185,7 +194,7 @@ bot.use(createConversation(startLinkConversation));
 bot.use(
   createConversation(startTokenGatingConversation, {
     id: "token-gating-conversation",
-  })
+  }),
 );
 
 bot.command("start", async (ctx) => {
@@ -202,6 +211,14 @@ bot.command("connect", connectApps);
 bot.command("airdrop", showAirdrop);
 bot.command("settings", handleSettings);
 bot.command("verify", handleVerify);
+bot.command("help", handleHelp);
+bot.command("coins", handleCoins);
+bot.command("communities", handleCommunities);
+bot.command("members", handleMembers);
+bot.command("rewards", handleRewards);
+bot.command("atm", handleAtm);
+bot.command("profile", handleProfile);
+bot.command("join", handleJoinTheClub);
 
 bot.callbackQuery("verify", handleVerify);
 bot.callbackQuery("main-menu", showMenu);
@@ -216,7 +233,7 @@ bot.callbackQuery("show-link", showLink);
 bot.callbackQuery("subscribe-airdrips", subscribeAirdrips);
 bot.callbackQuery("connect-app", connectApps);
 bot.callbackQuery("done-connect", (ctx: MyContext) =>
-  ctx.conversation.enter("startLinkConversation")
+  ctx.conversation.enter("startLinkConversation"),
 );
 bot.callbackQuery("first-airdrip", firstAirdrip);
 bot.callbackQuery("setup-settings", sendSettingsMessage);
@@ -231,13 +248,13 @@ bot.on("callback_query:data", async (ctx) => {
     await saveGroupTokenGatingInfo(
       data.groupId,
       group.username || group.title,
-      ctx.from.id
+      ctx.from.id,
     );
     await askTypeOfToken(
       ctx,
       ctx.from.id,
       group.username || group.title,
-      data.groupId
+      data.groupId,
     );
     await ctx.deleteMessage();
     ctx.answerCallbackQuery();
@@ -251,14 +268,17 @@ bot.on("callback_query:data", async (ctx) => {
     return;
   }
 });
-let bot_name = ""
+let bot_name = "";
 
-bot.api.getMe().then((botInfo) => {
-  console.log('Bot name:', botInfo.first_name);
-  bot_name = botInfo.first_name;
-}).catch((error) => {
-  console.error('Error fetching bot info:', error);
-});
+bot.api
+  .getMe()
+  .then((botInfo) => {
+    console.log("Bot name:", botInfo.first_name);
+    bot_name = botInfo.first_name;
+  })
+  .catch((error) => {
+    console.error("Error fetching bot info:", error);
+  });
 
 bot.on("message:text", async (ctx) => {
   const text = ctx.message.text.toLowerCase();
@@ -269,7 +289,7 @@ bot.on("message:text", async (ctx) => {
   const postData = {
     prompt: text,
     username: String(username),
-    botname: bot_name
+    botname: bot_name,
   };
 
   try {
@@ -325,10 +345,10 @@ bot.api.setMyCommands(
       command: "main",
       description: "Main Menu",
     },
-    {
-      command: "earn",
-      description: "Earn Rewards",
-    },
+    // {
+    //   command: "earn",
+    //   description: "Earn Rewards",
+    // },
     {
       command: "bags",
       description: "Check Bags",
@@ -341,26 +361,66 @@ bot.api.setMyCommands(
       command: "swap",
       description: "Swap Tokens",
     },
+    // {
+    //   command: "status",
+    //   description: "Display Status",
+    // },
+    // {
+    //   command: "join",
+    //   description: "Join Group",
+    // },
+    // {
+    //   command: "connect",
+    //   description: "Connect Apps",
+    // },
+    // {
+    //   command: "airdrop",
+    //   description: "Claim Airdrop",
+    // },
     {
-      command: "status",
-      description: "Display Status",
+      command: "coins",
+      description: "Coins",
+    },
+
+    {
+      command: "communities",
+      description: "Communities",
+    },
+    {
+      command: "members",
+      description: "Members",
+    },
+
+    {
+      command: "rewards",
+      description: "Rewards",
+    },
+
+    {
+      command: "atm",
+      description: "ATM",
+    },
+
+    {
+      command: "profile",
+      description: "My Profile",
+    },
+    {
+      command: "settings",
+      description: "Settings",
     },
     {
       command: "join",
-      description: "Join Group",
+      description: "Join the Club",
     },
     {
-      command: "connect",
-      description: "Connect Apps",
-    },
-    {
-      command: "airdrop",
-      description: "Claim Airdrop",
+      command: "help",
+      description: "Get Help",
     },
   ],
   {
     scope: { type: "all_private_chats" },
-  }
+  },
 );
 
 bot.api.setMyCommands(
@@ -372,7 +432,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_chat_administrators" },
-  }
+  },
 );
 
 bot.api.setMyCommands(
@@ -392,7 +452,7 @@ bot.api.setMyCommands(
   ],
   {
     scope: { type: "all_group_chats" },
-  }
+  },
 );
 
 const stopRunner = () => runner.isRunning() && runner.stop();
