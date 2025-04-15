@@ -31,7 +31,7 @@ export const joinAirdrip = async (ctx: Context) => {
       if (winnerCounter < parseInt(maxWinnerCount)) {
         winnerCounter++;
         const newWinner = {
-          addressPublicKey: savedUser.addressPublicKey,
+          addressPublicKey: savedUser.addressPublicKey!,
           telegramId: savedUser.telegramId,
         };
         await saveAirdropWinnerData(newWinner);

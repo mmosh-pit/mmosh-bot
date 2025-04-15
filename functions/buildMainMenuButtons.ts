@@ -5,7 +5,7 @@ const webAppLink = process.env.WEB_APP_LINK!;
 
 export const bagsLink = `${webLink}/bags`;
 export const sendTokensUrl = `${webLink}/send_tokens`;
-export const swapTokensUrl = `${webLink}/swap_coins`;
+export const swapTokensUrl = `${webLink}/create/swap`;
 
 export const coinsLinkUrl = `${webLink}/coins`;
 export const communitiesUrl = `${webLink}/communities`;

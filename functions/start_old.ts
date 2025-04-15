@@ -1,15 +1,9 @@
-import {
-  Api,
-  Bot,
-  Context,
-  GrammyError,
-  HttpError,
-  InlineKeyboard,
-  RawApi,
-} from "grammy";
+import { Api, Bot, Context, GrammyError, HttpError, RawApi } from "grammy";
 import { DBUser } from "../models/DBUser";
 import { MyContext } from "../models/MyContext";
-import { addTelegramToUser } from "../utils/users/addTelegramToUser";
+import { generateWallet } from "../utils/generateWallet";
+import { generateLink } from "../utils/users/generateLink";
+import { getLinkedUser } from "../utils/users/getLinkedUser";
 import { getReferredUser } from "../utils/users/getReferredUser";
 import { getUserByProfileAddress } from "../utils/users/getUserByProfileAddress";
 import { getUserByWallet } from "../utils/users/getUserByWallet";
@@ -54,7 +48,11 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
           : { file_path: "" }
         : { file_path: "" };
 
+      const wallet = await generateWallet(incomingWalletAddress);
+
       const newUser = {
+        addressPrivateKey: wallet.pKey,
+        addressPublicKey: wallet.address,
         bio: (chat as any).bio || "",
         firstName: ctx.from.first_name,
         lastName: ctx.from.last_name || "",
@@ -67,30 +65,13 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
         points: 0,
       };
 
-      if (incomingWalletAddress) {
-        await addTelegramToUser(ctx.from.id, incomingWalletAddress);
-        await bot.api.deleteMessage(
-          messageEntity.chat.id,
-          messageEntity.message_id,
-        );
-
-        const text = `Congrats! You have activated your Telegram account with your recently created Web Account.\n You can choose what to do now in the following buttons!`;
-
-        await ctx.reply(text, {
-          reply_markup: {
-            inline_keyboard: buildMainMenuButtons(ctx.from.id),
-          },
-        });
-
-        return;
-      }
-
       const insertedId = await saveUserData(newUser);
 
       let referrerUser: DBUser | null;
 
       if (referrerId) {
         const referrer = await getUserByProfileAddress(referrerId);
+        const mmoshReferrerData = await getLinkedUser(Number(referrerId));
 
         if (referrer) {
           referrerUser = await getUserByWallet(referrer.wallet);
@@ -108,32 +89,55 @@ export const start = async (ctx: Context, bot: Bot<MyContext, Api<RawApi>>) => {
             messageEntity.chat.id,
             messageEntity.message_id,
           );
+
+          await bot.api.sendMessage(
+            Number(referrerId),
+            `Congratulations! ${newUser.firstName} activated on MMOSHbot from your link. You just earned 100 points that can be redeemed for $MMOSH, merch and more! Send them a [welcome message](https://t.me/${newUser.username}) so they feel at home.`,
+            {
+              parse_mode: "Markdown",
+            },
+          );
+
+          let message = "";
+
+          if (referrer.profilenft) {
+            message = `We’ve dropped a courtesy Invitation to join the DAO from you into ${newUser.firstName}’s Social Wallet. If they mint a Profile, they’ll join your Guild and you’ll earn royalties from some of their mints and trades.`;
+          } else {
+            message =
+              "Don’t forget to mint a Profile NFT to become a member of MMOSH DAO. As a member, you can build up your Guild and receive royalties when your Guild members join Communities!";
+          }
+
+          await bot.api.sendMessage(Number(referrerId), message);
+          await bot.api.sendMessage(
+            Number(referrerId),
+            `${newUser.firstName}'s Social Wallet address is:\n\n${newUser.addressPublicKey}\n\nYou can send them invitations to join communities and Coins to get them started on the MMOSH!`,
+          );
+
+          if (!mmoshReferrerData) {
+            const link = await generateLink(referrerUser?.addressPublicKey!);
+            await bot.api.sendMessage(
+              Number(referrerId),
+              `Next, earn 250 points for verifying your Telegram account by following this link: ${link}\nThis is an important step to protect your tokens in the event you lose access to your Telegram account.`,
+            );
+          }
+
+          const firstText = `Welcome to the MMOSH! 👊\n\nBy joining us through ${referrerUser?.firstName}’s activation link, you earned 100 Points that can be redeemed for $MMOSH, merch and more! Send them [a thank you message](https://t.me/${referrerUser?.telegramId}) for inviting you to MMOSH.`;
+
+          const lastText = `Here’s the address of your new Social Wallet:\n\n${newUser.addressPublicKey}\n\nTo learn more about all the wholesome goodness provided by this bot, just ask me a question in the message field or select one of the buttons below, which are available from the /main menu at any time:`;
+
+          await ctx.reply(firstText);
+
+          await ctx.reply(lastText, {
+            reply_markup: {
+              inline_keyboard: buildMainMenuButtons(ctx.from.id),
+            },
+          });
+
+          return;
         }
       }
 
-      const text = `Hey there! To continue your registration to the LHC, please create an account in our website, by clicking into the next button!`;
-
-      await ctx.reply(text, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              InlineKeyboard.webApp(
-                "Register",
-                `${process.env.WEB_LINK}/auth?refer=${referrerId}&user=${ctx.from.id}`,
-              ),
-            ],
-          ],
-        },
-      });
-
       savedUser = newUser;
-
-      await bot.api.deleteMessage(
-        messageEntity.chat.id,
-        messageEntity.message_id,
-      );
-
-      return;
     }
 
     if (!savedUser.chatId || savedUser.chatId !== chat.id) {

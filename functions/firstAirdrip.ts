@@ -28,7 +28,7 @@ export const firstAirdrip = async (ctx: Context) => {
     if (!isUserAlreadyWinner) {
       if (winnerCounter < parseInt(airdripInfo.numParticipants)) {
         const newWinner = {
-          addressPublicKey: savedUser.addressPublicKey,
+          addressPublicKey: savedUser.addressPublicKey!,
           telegramId: savedUser.telegramId,
         };
         await saveAirdropWinnerData(newWinner);

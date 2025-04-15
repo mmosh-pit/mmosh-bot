@@ -28,7 +28,6 @@ import { joinAirdrip } from "./functions/joinAirdrip";
 import { showClaimAirdrop } from "./functions/showClaimAirdrop";
 import { showLink } from "./functions/showLink";
 import { checkUserDataMiddleware } from "./middlewares/checkUserDataMiddleware";
-import { checkForUserProfileNFT } from "./functions/checkForUserProfileNFT";
 import { handleSettings } from "./functions/handleSettings";
 import { sendSettingsMessage } from "./functions/sendSettingsMessage";
 import { MyContext } from "./models/MyContext";
@@ -47,6 +46,46 @@ import { handleRewards } from "./functions/handleRewards";
 import { handleAtm } from "./functions/handleAtm";
 import { handleProfile } from "./functions/handleMyProfile";
 import { handleJoinTheClub } from "./functions/handleJoinTheClub";
+import { checkForUserAgentTokenGatedInfo } from "./functions/checkForUserAgentTokenGatedInfo";
+import { saveMessageAndInformAI } from "./functions/saveMessageAndInformAI";
+import { getAgent } from "./utils/groups/getAgent";
+import { getGroupAgentToolInfoWithoutPrivacy } from "./utils/groups/getGroupAgentToolInfoWithoutPrivacy";
+
+const DEFAULT_SYSTEM_PROMPT = `[System]
+You are KC, the digital embodiment of Kinship Codes, an agentic ecosystem on the blockchain. Your role is to serve as an engaging, knowledgeable, and friendly assistant in the field of on-chain AI Agent technology. You are designed to provide clear, concise, and conversational responses that reflect a friendly tone and a deep understanding of agentic tech topics, including AI trends, the uses and capabilities of this application, the AI agents available on this app, cryptocurrencies, prompt engineering, blockchain, the agent coins available through this app, the creator economy, and digital marketing.
+
+Tone & Style:
+- Your tone is friendly and conversational.
+- Use simple, accessible language that resonates with a broad audience.
+- Maintain a consistent, engaging voice that encourages further questions.
+
+Objectives:
+- Your primary objective is to refer the user to the agents that are most likely to meet the user’s needs.
+- Another objective is to guide the user through the application.
+- Encourage the user to create their own personal agents and Kinship Agents.
+
+Expertise:
+- You are well-versed in technology, with specialized knowledge inAI trends, the uses and capabilities of this application, the AI agents available on this app, cryptocurrencies, prompt engineering, blockchain, the agent coins available through this app, the creator economy, and digital marketing.
+- When appropriate, you provide detailed yet concise explanations, and you are proactive in guiding users through follow-up questions.
+Interaction Style & Behavioral Directives:
+- Interact in an engaging, interactive, and personalized manner.
+- Always remain respectful and professional.
+- If a topic falls outside your defined scope, or if clarity is needed, ask the user for additional context.
+- In cases of uncertainty, say: "If I'm unsure, I'll ask clarifying questions rather than guess. Please feel free to provide more context if needed."
+
+Greeting & Messaging:
+- Start each conversation with something like: "Hello! I'm KC, here to help you make the most of the agentic economy."
+- End your responses with a brief, consistent sign-off if appropriate, reinforcing your readiness to assist further.
+
+Error Handling & Disclaimer:
+- If a technical problem arises or you are unable to provide an answer, use a fallback message such as: "I'm sorry, I don't have enough information on that right now. Could you please provide more details?"
+- Always include the following disclaimer when relevant: "I am a digital representation of Alex Johnson. My responses are based on available data and are not a substitute for professional advice."
+Remember to consistently reflect these attributes and instructions throughout every interaction, ensuring that the user experience remains aligned with the defined persona and brand values. To chat with me directly and learn how to build your own bot, click here: [Kinship Bot](https://t.me/kinshipchatbot?start=${process.env.NEXT_PUBLIC_GENESIS_PROFILE!})
+[End System]
+`;
+
+const DEFAULT_SYSTEM_PROMPT_END =
+  ". To chat with me directly and learn how to build your own bot, click here: [Kinship Bot](https://t.me/kinshipchatbot?start=referral_code";
 
 const bot = new Bot<MyContext>(process.env.BOT_TOKEN!);
 
@@ -71,7 +110,7 @@ bot.catch((error) => {
     "Sorry, something went wrong. Please try again later or communicate with Support";
   try {
     error.ctx.reply(genericErrorMessage);
-  } catch (_) {}
+  } catch (_) { }
 });
 
 const startLinkConversation = (
@@ -138,7 +177,7 @@ const startTokenGatingConversation = async (
       if (PublicKey.isOnCurve(message?.text || "")) {
         address = message?.text;
       }
-    } catch (_) {}
+    } catch (_) { }
   } while (!address);
 
   if (!address) {
@@ -268,13 +307,16 @@ bot.on("callback_query:data", async (ctx) => {
     return;
   }
 });
+
 let bot_name = "";
+let bot_username = "";
 
 bot.api
   .getMe()
   .then((botInfo) => {
     console.log("Bot name:", botInfo.first_name);
     bot_name = botInfo.first_name;
+    bot_username = botInfo.username;
   })
   .catch((error) => {
     console.error("Error fetching bot info:", error);
@@ -284,60 +326,117 @@ bot.on("message:text", async (ctx) => {
   const text = ctx.message.text.toLowerCase();
   const username = ctx.from.id ? ctx.from.id : "unknown_user";
 
-  //const apiUrl = "http://localhost:8080/generate/";
   const apiUrl = "https://mmoshapi-uodcouqmia-uc.a.run.app/generate/";
+
   const postData = {
     prompt: text,
     username: String(username),
     botname: bot_name,
+    system_prompt: DEFAULT_SYSTEM_PROMPT,
   };
 
-  try {
-    // Perform the POST request using axios
+  if (["group", "supergroup"].includes(ctx.message.chat.type)) {
+    if (!ctx.from.username) return;
+
+    saveMessageAndInformAI(
+      ctx.message.text,
+      ctx.message.chat.id,
+      ctx.message.chat.username ?? "",
+      ctx.from.username,
+      ctx.from.id,
+    );
+
+    let hasMention = false;
+
+    ctx.message.entities?.forEach((entity) => {
+      if (entity.type === "mention") {
+        if (
+          ctx.message.text.includes(bot_username) ||
+          ctx.message.text.includes(bot_name)
+        ) {
+          hasMention = true;
+        }
+      }
+    });
+
+    if (!hasMention) return;
+
+    const finalText = ctx.message.text
+      .replace(`@${bot_username}`, "")
+      .replace(`@${bot_name}`, "");
+
+    const groupAgentToolInfo = await getGroupAgentToolInfoWithoutPrivacy(
+      ctx.message.chat.username ?? "",
+    );
+
+    if (!groupAgentToolInfo) return;
+
+    const agent = await getAgent(groupAgentToolInfo.project);
+
+    let defaultReferred = process.env.NEXT_PUBLIC_GENESIS_PROFILE!;
+
+    if (!!agent) {
+      defaultReferred = agent.creatorUsername;
+    }
+
+    postData.system_prompt =
+      groupAgentToolInfo.data.instructions +
+      DEFAULT_SYSTEM_PROMPT_END.replace("referral_code", defaultReferred);
+    postData.prompt = finalText;
     const response = await axios.post(apiUrl, postData, {
       headers: {
         "Content-Type": "application/json",
       },
     });
-    console.log(response.data);
-    //await ctx.reply(response.data);
 
-    const geminiResponse = response.data;
+    await ctx.reply(response.data);
+  } else {
+    try {
+      // Perform the POST request using axios
+      const response = await axios.post(apiUrl, postData, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      //await ctx.reply(response.data);
 
-    switch (geminiResponse) {
-      case "/start":
-        await start(ctx, bot);
-        break;
-      case "/earn":
-        showEarn(ctx);
-        break;
-      case "/status":
-        showDisplayLeaderboard(ctx);
-        break;
-      case "/main":
-        showMenu(ctx);
-        break;
-      case "/bags":
-        showCheckBags(ctx);
-        break;
-      case "/connect":
-        connectApps(ctx);
-        break;
-      case "/settings":
-        handleSettings(ctx);
-        break;
-      case "/join":
-        showJoinGroup(ctx);
-      default:
-        await ctx.reply(geminiResponse);
+      const geminiResponse = response.data;
+
+      switch (geminiResponse) {
+        case "/start":
+          await start(ctx, bot);
+          break;
+        case "/earn":
+          showEarn(ctx);
+          break;
+        case "/status":
+          showDisplayLeaderboard(ctx);
+          break;
+        case "/main":
+          showMenu(ctx);
+          break;
+        case "/bags":
+          showCheckBags(ctx);
+          break;
+        case "/connect":
+          connectApps(ctx);
+          break;
+        case "/settings":
+          handleSettings(ctx);
+          break;
+        case "/join":
+          showJoinGroup(ctx);
+        default:
+          await ctx.reply(geminiResponse);
+      }
+    } catch (error) {
+      console.error("Failed to fetch from API:", error);
+      await ctx.reply("There was an error processing your request.");
     }
-  } catch (error) {
-    console.error("Failed to fetch from API:", error);
-    await ctx.reply("There was an error processing your request.");
   }
 });
 
-bot.on("message", checkForUserProfileNFT);
+bot.on("message", checkForUserAgentTokenGatedInfo);
 
 bot.api.setMyCommands(
   [

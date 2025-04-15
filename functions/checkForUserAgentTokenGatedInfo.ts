@@ -1,10 +1,10 @@
 import { Context } from "grammy";
-import { getGroupTokenGatingInfo } from "../utils/groups/getGroupTokenGatingConfig";
+import { getGroupAgentToolInfo } from "../utils/groups/getGroupAgentToolInfo";
 import { getUserFromDB } from "../utils/users/getUserFromDB";
 import { getUserLinkedWallet } from "../utils/users/getUserLinkedWallet";
 import { getAssetsByWallet } from "../utils/web3/getAssetsByWallet";
 
-export async function checkForUserProfileNFT(ctx: Context) {
+export async function checkForUserAgentTokenGatedInfo(ctx: Context) {
   if (ctx.from?.is_bot) return;
 
   const isGroup = ctx.message?.chat.type === "group";
@@ -12,16 +12,13 @@ export async function checkForUserProfileNFT(ctx: Context) {
 
   if (isGroup || isSupergroup) {
     if (ctx.message!.new_chat_members) {
-      const tokenGatingConfig = await getGroupTokenGatingInfo(
-        ctx.message.chat.id,
+      const tokenGatingConfig = await getGroupAgentToolInfo(
+        ctx.message.chat.username!,
       );
 
       if (!tokenGatingConfig) return;
-      if (!tokenGatingConfig.tokenAddress) return;
 
-      const fetchFungibles =
-        tokenGatingConfig.tokenType === "sft" ||
-        tokenGatingConfig.tokenType === "coin";
+      console.log("Got config!");
 
       for (const member of ctx.message!.new_chat_members) {
         if (member.is_bot) continue;
@@ -35,23 +32,28 @@ export async function checkForUserProfileNFT(ctx: Context) {
 
         const containsRightAsset = await checkIfUserCanJoinGroup(
           userInfo.addressPublicKey!,
-          fetchFungibles,
-          tokenGatingConfig.tokenAddress,
-          tokenGatingConfig.amount,
-          tokenGatingConfig.tokenType,
+          false,
+          tokenGatingConfig.project,
+        );
+
+        console.log(
+          "Does this User contains the right asset? ",
+          containsRightAsset,
         );
 
         if (!containsRightAsset) {
           const linkedWallet = await getUserLinkedWallet(member.id);
 
+          console.log("Do we have a linked wallet? ", !!linkedWallet);
+
           if (linkedWallet) {
             const containsAsset = await checkIfUserCanJoinGroup(
               linkedWallet.wallet,
-              fetchFungibles,
-              tokenGatingConfig.tokenAddress,
-              tokenGatingConfig.amount,
-              tokenGatingConfig.tokenType,
+              false,
+              tokenGatingConfig.project,
             );
+
+            console.log("Contains right asset? ", containsRightAsset);
 
             if (containsAsset) {
               continue;
@@ -69,31 +71,23 @@ export async function checkForUserProfileNFT(ctx: Context) {
 async function checkIfUserCanJoinGroup(
   wallet: string,
   fetchFungibles: boolean,
-  collectionAddress: string,
-  amount: number,
-  type: string,
+  projectKey: string,
 ): Promise<boolean> {
   const userWalletInfo = await getAssetsByWallet(wallet, fetchFungibles);
 
-  let amountOfAssets = 0;
+  let result = false;
 
   userWalletInfo.result.items.forEach((val: any) => {
-    const collectionData = val.grouping.find(
-      (group: any) => group.group_key === "collection",
-    );
+    const value = val.content.metadata.attributes?.find(
+      (attr: any) => attr.trait_type === "Project",
+    )?.value;
 
-    if (type === "coin") {
-      if (val.id === collectionAddress) {
-        amountOfAssets += val.token_info.balance;
-      }
-    } else {
-      if (collectionData?.group_value === collectionAddress) {
-        amountOfAssets += val.token_info.balance;
-      }
+    if (value === projectKey) {
+      result = true;
     }
   });
 
-  return amountOfAssets >= amount;
+  return result;
 }
 
 async function banChatMember(ctx: Context, memberId: number) {
