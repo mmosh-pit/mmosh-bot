@@ -4,6 +4,7 @@ import { getLinkedUser } from "../utils/users/getLinkedUser";
 import { getUserFromDB } from "../utils/users/getUserFromDB";
 
 export const handleVerify = async (ctx: Context) => {
+  console.log("Handling verify...");
   const from = ctx.from;
 
   if (!from) return;

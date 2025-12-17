@@ -51,6 +51,8 @@ import { saveMessageAndInformAI } from "./functions/saveMessageAndInformAI";
 import { getAgent } from "./utils/groups/getAgent";
 import { getGroupAgentToolInfoWithoutPrivacy } from "./utils/groups/getGroupAgentToolInfoWithoutPrivacy";
 
+import { appServer } from "./app";
+
 const DEFAULT_SYSTEM_PROMPT = `[System]
 You are KC, the digital embodiment of Kinship Codes, an agentic ecosystem on the blockchain. Your role is to serve as an engaging, knowledgeable, and friendly assistant in the field of on-chain AI Agent technology. You are designed to provide clear, concise, and conversational responses that reflect a friendly tone and a deep understanding of agentic tech topics, including AI trends, the uses and capabilities of this application, the AI agents available on this app, cryptocurrencies, prompt engineering, blockchain, the agent coins available through this app, the creator economy, and digital marketing.
 
@@ -383,6 +385,7 @@ bot.on("message:text", async (ctx) => {
       groupAgentToolInfo.data.instructions +
       DEFAULT_SYSTEM_PROMPT_END.replace("referral_code", defaultReferred);
     postData.prompt = finalText;
+    console.log(postData, "==postData group chat");
     const response = await axios.post(apiUrl, postData, {
       headers: {
         "Content-Type": "application/json",
@@ -554,7 +557,18 @@ bot.api.setMyCommands(
   },
 );
 
-const stopRunner = () => runner.isRunning() && runner.stop();
+const stopRunner = () => {
+  runner.isRunning() && runner.stop();
+  process.exit(0);
+};
 
+try {
+  const PORT = Number(process.env.PORT || 3003);
+  appServer.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
+  });
+} catch (error) {
+  console.log("Failed to start server:", error);
+}
 process.once("SIGINT", stopRunner);
 process.once("SIGTERM", stopRunner);
