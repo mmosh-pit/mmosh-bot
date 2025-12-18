@@ -7,3 +7,10 @@ export async function getUserFromDB(id: number): Promise<DBUser | null> {
 
   return data;
 }
+
+export async function getUserFromMmoshUser(id: number): Promise<Object | null> {
+  const collection = db.collection("mmosh-users");
+  const data = await collection.findOne({ telegramId: id });
+
+  return data;
+}
