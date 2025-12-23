@@ -10,4 +10,5 @@ FROM base AS app
 WORKDIR /app
 COPY --from=deps_app /deps_app/node_modules ./node_modules
 COPY . .
+EXPOSE 3003
 CMD ["npm", "start"]

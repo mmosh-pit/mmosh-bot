@@ -75,6 +75,6 @@ app.post("/webhook/:id", (req, res) => {
 app.get("/list-bots", (req, res) => res.json(botManager.listBots()));
 
 
-// app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 
 export const appServer = app;

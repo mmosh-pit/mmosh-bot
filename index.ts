@@ -88,7 +88,7 @@ Remember to consistently reflect these attributes and instructions throughout ev
 
 const DEFAULT_SYSTEM_PROMPT_END =
   ". To chat with me directly and learn how to build your own bot, click here: [Kinship Bot](https://t.me/kinshipchatbot?start=referral_code";
-
+try {
 const bot = new Bot<MyContext>(process.env.BOT_TOKEN!);
 
 const runner = run(bot);
@@ -557,18 +557,33 @@ bot.api.setMyCommands(
   },
 );
 
-const stopRunner = () => {
-  runner.isRunning() && runner.stop();
-  process.exit(0);
-};
+
+  
+  const stopRunner = () => {
+    runner.isRunning() && runner.stop();
+    process.exit(0);
+  };
+  process.once("SIGINT", stopRunner);
+  process.once("SIGTERM", stopRunner);
+  process.on("unhandledRejection", (reason, promise) => {
+    console.log("Unhandled Rejection at:", promise, "reason:", reason);
+  });
+} catch (error) {
+  console.log("Failed to start bot runner:", error);
+}
+
 
 try {
   const PORT = Number(process.env.PORT || 3003);
   appServer.listen(PORT, () => {
     console.log(`Server started on port ${PORT}`);
   });
+  const stopRunner = () => {
+    process.exit(0);
+  };
+  process.once("SIGINT", stopRunner);
+  process.once("SIGTERM", stopRunner);
 } catch (error) {
   console.log("Failed to start server:", error);
 }
-process.once("SIGINT", stopRunner);
-process.once("SIGTERM", stopRunner);
+
