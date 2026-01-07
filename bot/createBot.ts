@@ -342,6 +342,7 @@ export function createBotInstance(token: string, projectId?: string) {
   bot.on("my_chat_member", async (ctx) => {
     console.log("my_chat_members", JSON.stringify(ctx, null, 2))
     // project_id
+    console.log( ctx.api.token, projectId!, "==ctx.api.token, projectId!")
     let tool = await getProjectToolsInfo(ctx.api.token, projectId!);
     console.log(tool, "==toole")
     let updateData = await updateProjectGroupId(ctx.api.token, projectId!, ctx.update.my_chat_member.chat.id, ctx.update.my_chat_member.chat.title);
