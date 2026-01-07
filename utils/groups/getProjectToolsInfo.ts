@@ -1,6 +1,7 @@
 import { db } from "../../config/mongoConfig";
 
 export async function getProjectToolsInfo(token: string, project: string) {
+  console.log("Getting project tool info for token:", token, "and project:", project);
   const collection = db.collection("mmosh-app-project-tools");
 
   const data = await collection.findOne({

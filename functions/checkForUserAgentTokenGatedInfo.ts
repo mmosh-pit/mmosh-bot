@@ -83,12 +83,12 @@ export async function checkForUserAgentTokenGatedInfoV1(ctx: Context, projectId:
   const isSupergroup = ctx.message?.chat.type === "supergroup";
 
   if (isGroup || isSupergroup) {
-    console.log("IsGrouppp>>>", ctx.message!.new_chat_members, ctx.message.chat.username)
+    console.log("IsGroupppV!!!>>>", ctx.message!.new_chat_members, ctx.message.chat.username, ctx.api.token, projectId);
     if (ctx.message!.new_chat_members) {
       const tokenGatingConfig = await getProjectToolsInfo(
         ctx.api.token, projectId,
       );
-
+      console.log(tokenGatingConfig, "==tokenGatingConfig")
       if (!tokenGatingConfig) return;
 
       console.log("Got config!");
@@ -142,6 +142,8 @@ export async function checkForUserAgentTokenGatedInfoV1(ctx: Context, projectId:
           banChatMember(ctx, member.id);
         }
       }
+    } else {
+      console.log("No new members");
     }
   }
 }

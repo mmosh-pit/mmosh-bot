@@ -36,12 +36,12 @@ app.post("/register-bot", async (req, res) => {
   } */
 
 
-  const { id, token } = req.body;
-  if (!id || !token) return res.status(400).json({ error: "id & token required" });
+  const { id, token, projectId } = req.body;
+  if (!id || !token || !projectId) return res.status(400).json({ error: "id & token & projectId required" });
 
 
   try {
-    const entry = await botManager.createBot(id, token);
+    const entry = await botManager.createBot(id, token, projectId);
     return res.json({ ok: true, webhook: `${BASE_URL}/webhook/${id}` });
   } catch (err: any) {
     console.error("createBot error", err?.message || err);
